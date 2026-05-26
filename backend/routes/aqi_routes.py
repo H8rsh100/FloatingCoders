@@ -11,9 +11,41 @@ aqi_bp = Blueprint('aqi', __name__, url_prefix='/api/aqi')
 @aqi_bp.route('/readings', methods=['POST'])
 def receive_reading():
     """Public/Hardware API: Receive sensor reading."""
-    data = request.get_json()
+    data = request.get_json(silent=True)
+    
     if not data:
-        return error_response("Invalid JSON data provided.", status_code=400)
+        # Fallback: Parse raw string payloads (like "AQI:86,STATUS:MEDIUM")
+        raw_data = request.get_data().decode('utf-8', errors='ignore').strip()
+        if "AQI:" in raw_data or "aqi:" in raw_data.lower():
+            try:
+                parts = raw_data.split(',')
+                parsed_data = {}
+                for part in parts:
+                    if ':' in part:
+                        k, v = part.split(':', 1)
+                        parsed_data[k.strip().lower()] = v.strip()
+                
+                aqi_val = int(parsed_data.get('aqi', 0))
+                data = {
+                    "node_code": "NODE_02",  # Default to our active Pimpalgaon node code
+                    "mq135_value": aqi_val,
+                    "temperature": 28.0,
+                    "humidity": 55.0,
+                    "battery_level": 95
+                }
+            except Exception:
+                pass
+        elif raw_data.isdigit():
+            data = {
+                "node_code": "NODE_02",
+                "mq135_value": int(raw_data),
+                "temperature": 28.0,
+                "humidity": 55.0,
+                "battery_level": 95
+            }
+            
+    if not data:
+        return error_response("Invalid JSON or string data provided.", status_code=400)
     
     success, result = add_reading(data)
     
