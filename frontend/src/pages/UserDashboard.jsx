@@ -42,14 +42,14 @@ const UserDashboard = () => {
   const { data: predData                          } = usePolling(fetchPred,    30000);
   const { data: agriData                          } = usePolling(fetchAgri,    30000);
 
-  const readings = aqiData?.data?.readings || [];
-  const topReading = readings[0] || {};
-  const currentAQI = topReading.calculated_aqi ?? '—';
+  const readings = aqiData?.data?.nodes || aqiData?.data?.readings || [];
+  const topReading = readings.find(r => r.node_code === 'NODE_02') || readings.find(r => r.latest_aqi !== null) || readings[0] || {};
+  const currentAQI = topReading.latest_aqi ?? topReading.calculated_aqi ?? '—';
   const isFresh = topReading.is_fresh ?? false;
 
   const trendData = readings.map(r => ({
     time: r.node_code,
-    aqi: r.calculated_aqi ?? 0,
+    aqi: r.latest_aqi ?? r.calculated_aqi ?? 0,
   }));
 
   const alerts = alertData?.data?.alerts || [];
@@ -404,7 +404,7 @@ const UserDashboard = () => {
                         <tr key={i} style={{ borderBottom: '1px solid #F3F4F6' }}>
                           <td style={{ padding: '10px 16px', fontWeight: 600 }}>{r.node_code}</td>
                           <td style={{ padding: '10px 16px', color: '#6B7280' }}>{r.village}</td>
-                          <td style={{ padding: '10px 16px' }}><AQIBadge aqi={r.calculated_aqi} size="sm" /></td>
+                          <td style={{ padding: '10px 16px' }}><AQIBadge aqi={r.latest_aqi ?? r.calculated_aqi} size="sm" /></td>
                           <td style={{ padding: '10px 16px' }}>
                             <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: 4, fontWeight: 600, background: r.is_fresh ? '#DCFCE7' : '#F3F4F6', color: r.is_fresh ? '#16A34A' : '#9CA3AF' }}>
                               {r.is_fresh ? t('live') : t('stale')}
