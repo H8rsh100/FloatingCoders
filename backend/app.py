@@ -62,4 +62,4 @@ def create_app(test_config=None):
 
 if __name__ == '__main__':
     app = create_app()
-    app.run(debug=app.config['DEBUG_MODE'], port=5000)
+    app.run(debug=app.config['DEBUG_MODE'], host='0.0.0.0', port=5000)
